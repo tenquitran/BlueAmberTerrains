@@ -19,9 +19,6 @@
     <Filter Include="Terrain">
       <UniqueIdentifier>{7dac042c-930c-49e1-94ba-00f8f2ba01b3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Heightmap">
-      <UniqueIdentifier>{1d849a20-b93c-4fe0-a8b2-66d639c8cc98}</UniqueIdentifier>
-    </Filter>
     <Filter Include="OpenGL_Common">
       <UniqueIdentifier>{f6e6269f-59c2-4532-b558-147d25bb6115}</UniqueIdentifier>
     </Filter>
@@ -48,12 +45,6 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Heightmap.h">
-      <Filter>Heightmap</Filter>
-    </ClInclude>
-    <ClInclude Include="HeightData.h">
-      <Filter>Heightmap</Filter>
-    </ClInclude>
     <ClInclude Include="Exception.h">
       <Filter>Utilities</Filter>
     </ClInclude>
@@ -72,6 +63,12 @@
     <ClInclude Include="Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Heightmap.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="HeightData.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BlueAmberTerrains.cpp">
@@ -82,12 +79,6 @@
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Heightmap.cpp">
-      <Filter>Heightmap</Filter>
-    </ClCompile>
-    <ClCompile Include="HeightData.cpp">
-      <Filter>Heightmap</Filter>
     </ClCompile>
     <ClCompile Include="Exception.cpp">
       <Filter>Utilities</Filter>
@@ -106,6 +97,12 @@
     </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Heightmap.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="HeightData.cpp">
+      <Filter>Terrain</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

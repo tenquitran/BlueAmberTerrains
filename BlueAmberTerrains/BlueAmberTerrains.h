@@ -21,14 +21,6 @@ public:
 // Implementation
 
 	DECLARE_MESSAGE_MAP()
-
-public:
-	// Load heightmap data from the file specified.
-	// Parameters: filePath - full path to the file.
-	bool loadHeightmapFromFile(const CAtlString& filePath);
-
-private:
-	std::unique_ptr<BlueAmberTerrainsApp::Scene> m_spScene;
 };
 
 extern CBlueAmberTerrainsApp theApp;

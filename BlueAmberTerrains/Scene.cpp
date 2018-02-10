@@ -9,36 +9,38 @@ using namespace BlueAmberTerrainsApp;
 //////////////////////////////////////////////////////////////////////////
 
 
-Scene::Scene(GLfloat terrainScaleFactor)
-	: m_terrain(terrainScaleFactor)
+Scene::Scene(GLfloat terrainScaleFactor, HDC hDC)
+	: m_hDC(hDC), m_clientWidth{}, m_clientHeight{}, m_terrain(terrainScaleFactor)
 {
+	if (!m_hDC)
+	{
+		assert(false); throw EXCEPTION(L"Window DC is NULL");
+	}
 }
 
 Scene::~Scene()
 {
 }
 
-bool Scene::initialize()
+bool Scene::initialize(int clientWidth, int clientHeight)
 {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
+	glClearColor(0.0f, 0.64f, 0.91f, 1.0f);    // light blue
 
 	// Initial scale factor for the camera.
 	const GLfloat CameraScaleFactor = 0.02f; /*3.5f;*/
 
-	// Field of view angle.
-	const GLfloat FieldOfView = 45.0f;
+	if (0 == clientHeight)    // prevent dividing by zero
+	{
+		clientHeight = 1;
+	}
 
-	// Frustum boundaries.
-	const GLfloat FrustumNear = 0.1f;
-	const GLfloat FrustumFar  = 1000.0f;
-
-	const GLfloat AspectRatio = getMainWindowAspectRatio();
+	GLfloat aspectRatio = clientWidth / (GLfloat)clientHeight;
 
 	// NOTE: don't catch std::bad_alloc here
-	m_spCamera = std::make_unique<Camera>(AspectRatio, CameraScaleFactor, FieldOfView, FrustumNear, FrustumFar);
+	m_spCamera = std::make_unique<Camera>(aspectRatio, CameraScaleFactor, FieldOfView, FrustumNear, FrustumFar);
 
 #if 1
 	// Get our terrain in focus.
@@ -51,6 +53,14 @@ bool Scene::initialize()
 
 	try
 	{
+		// TODO: temp - load the hard-coded heightmap.
+		CAtlString filePath = L"D:\\natProgs\\graphics2\\BlueAmberTerrains\\BlueAmberTerrains\\data\\heightmap1.png";
+		if (!loadHeightmapFromFile(filePath))
+		{
+			std::cerr << "Failed to load heightmap: " << std::wstring_convert< std::codecvt_utf8<wchar_t> >().to_bytes(filePath) << '\n';
+			return false;
+		}
+
 		if (!m_terrain.initialize())
 		{
 			std::cerr << "Terrain initialization failed\n";
@@ -71,22 +81,71 @@ bool Scene::initialize()
 	return true;
 }
 
-GLfloat Scene::getMainWindowAspectRatio() const
-{
-	CBlueAmberTerrainsDlg *pMainDlg = (CBlueAmberTerrainsDlg *)AfxGetMainWnd();
-	if (!pMainDlg)
-	{
-		std::cerr << "Scene initialization: no main window\n";
-		assert(false); return false;
-	}
-
-	RECT clientRect = {};
-	pMainDlg->GetClientRect(&clientRect);
-
-	return (clientRect.right - clientRect.left) / (float)(clientRect.bottom - clientRect.top);
-}
-
 bool Scene::loadHeightmapFromFile(const CAtlString& filePath)
 {
 	return m_terrain.loadHeightmapFromFile(filePath);
+}
+
+void Scene::resize(int clientWidth, int clientHeight)
+{
+	if (0 == clientHeight)    // prevent dividing by zero
+	{
+		clientHeight = 1;
+	}
+
+	// Resize the viewport.
+	glViewport(0, 0, clientWidth, clientHeight);
+
+	// Calculate aspect ratio of the window.
+	//gluPerspective(45.0f, m_clientWndWidth / (GLfloat)m_clientWndHeight, 0.1, 1000.0f);
+	gluPerspective(FieldOfView, clientWidth / (GLfloat)clientHeight, FrustumNear, FrustumFar);
+}
+
+void Scene::translateCameraX(GLfloat diff)
+{
+	m_spCamera->translateX(diff);
+}
+
+void Scene::translateCameraY(GLfloat diff)
+{
+	m_spCamera->translateY(diff);
+}
+
+void Scene::translateCameraZ(GLfloat diff)
+{
+	m_spCamera->translateZ(diff);
+}
+
+void Scene::rotateCameraX(GLfloat angle)
+{
+	m_spCamera->rotateX(angle);
+}
+
+void Scene::rotateCameraY(GLfloat angle)
+{
+	m_spCamera->rotateY(angle);
+}
+
+void Scene::rotateCameraZ(GLfloat angle)
+{
+	m_spCamera->rotateZ(angle);
+}
+
+void Scene::scaleCamera(GLfloat amount)
+{
+	m_spCamera->scale(amount);
+}
+
+void Scene::render() const
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);    // wireframe mode
+
+#if 1
+	m_terrain.updateViewMatrices(m_spCamera);
+	m_terrain.render();
+#endif
+
+	SwapBuffers(m_hDC);
 }

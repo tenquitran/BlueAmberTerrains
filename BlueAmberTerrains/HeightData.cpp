@@ -23,7 +23,7 @@ HeightData::~HeightData()
 
 bool HeightData::isEmpty() const
 {
-	return (nullptr != m_pData);
+	return (nullptr == m_pData);
 }
 
 int HeightData::getWidth() const
@@ -54,7 +54,7 @@ bool HeightData::loadFromFile(const CAtlString& filePath)
 	if (!m_pData)
 	{
 		std::cerr << "Failed to load texture " << filePathA << ": " << SOIL_last_result() << '\n';
-		return false;
+		assert(false); return false;
 	}
 
 	m_size = m_width * m_height;

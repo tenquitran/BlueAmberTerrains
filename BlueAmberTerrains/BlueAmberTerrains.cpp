@@ -104,14 +104,3 @@ BOOL CBlueAmberTerrainsApp::InitInstance()
 	//  application, rather than start the application's message pump.
 	return FALSE;
 }
-
-bool CBlueAmberTerrainsApp::loadHeightmapFromFile(const CAtlString& filePath)
-{
-	if (!m_spScene)
-	{
-		assert(false); return false;
-	}
-
-	return m_spScene->loadHeightmapFromFile(filePath);
-}
-
