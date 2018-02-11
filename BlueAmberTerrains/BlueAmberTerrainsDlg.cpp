@@ -118,20 +118,29 @@ BOOL CBlueAmberTerrainsDlg::OnInitDialog()
 		assert(false); return TRUE;
 	}
 
+	// NOTE: the scene won't be created yet because the heightmap file for terrain hasn't been specified.
+#if 0
+	// TODO: temp
+	CAtlString tmpPath = L"D:\\natProgs\\graphics2\\BlueAmberTerrains\\BlueAmberTerrains\\data\\heightmap1.png";
+
 	// Create and initialize the scene.
 
-	m_spScene = std::make_unique<Scene>(0.25f, GetDC()->m_hDC);
-
-	int clientWidth  = {};
+	int clientWidth = {};
 	int clientHeight = {};
 
 	getClientSize(clientWidth, clientHeight);
 
+	m_spScene = std::make_unique<Scene>(0.25f, GetDC()->m_hDC, clientWidth, clientHeight, tmpPath);
+
+#if 0
 	if (!m_spScene->initialize(clientWidth, clientHeight))
 	{
 		std::cerr << "Scene initialization failed\n";
 		assert(false); return TRUE;
 	}
+#endif
+
+#endif
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -420,33 +429,31 @@ void APIENTRY CBlueAmberTerrainsDlg::openGlDebugCallback(GLenum source, GLenum t
 
 void CBlueAmberTerrainsDlg::OnOpenHeightmap()
 {
-	CFileDialog dlg(TRUE, L"png", L"*.png");
+	// TODO: fix the file extension code
+	CFileDialog dlg(TRUE);
+	//CFileDialog dlg(TRUE, L"png", nullptr, 0, L"*.png");
+
 	// TODO: temp
 	dlg.GetOFN().lpstrInitialDir = L"D:\\natProgs\\graphics2\\BlueAmberTerrains\\BlueAmberTerrains\\data";
 
 	if (IDOK == dlg.DoModal())
 	{
-		CFile file;
-		CAtlString filePath;
+		CAtlString filePath = dlg.GetPathName();
 
-		if (file.Open(filePath = dlg.GetPathName(), CFile::modeRead))
+		// (Re-)create the scene based on the new heightmap file.
+
+		int clientWidth  = {};
+		int clientHeight = {};
+
+		getClientSize(clientWidth, clientHeight);
+
+		if (m_spScene)
 		{
-			if (!loadHeightmapFromFile(filePath))
-			{
-				std::cerr << "Failed to load heightmap: " << std::wstring_convert< std::codecvt_utf8<wchar_t> >().to_bytes(filePath) << '\n';
-			}
+			m_spScene.reset();
 		}
-	}
-}
 
-bool CBlueAmberTerrainsDlg::loadHeightmapFromFile(const CAtlString& filePath)
-{
-	if (!m_spScene)
-	{
-		assert(false); return false;
+		m_spScene = std::make_unique<Scene>(0.25f, GetDC()->m_hDC, clientWidth, clientHeight, filePath);
 	}
-
-	return m_spScene->loadHeightmapFromFile(filePath);
 }
 
 void CBlueAmberTerrainsDlg::OnExitApplication()
@@ -556,6 +563,12 @@ void CBlueAmberTerrainsDlg::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	case VK_RIGHT:
 		m_spScene->rotateCameraY(2.0f);
 		break;
+	case VK_PRIOR:    // PageUp key
+		m_spScene->rotateCameraZ(2.0f);
+		break;
+	case VK_NEXT:     // PageDown key
+		m_spScene->rotateCameraZ(-2.0f);
+		break;
 	default:
 		break;
 	}
@@ -590,6 +603,8 @@ BOOL CBlueAmberTerrainsDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 void CBlueAmberTerrainsDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
+	// Camera control, unfinished (slow and jerky movements).
+
 #if 0//_DEBUG
 	CAtlString msg;
 	msg.Format(L"Mouse: %ld, %ld\n", point.x, point.y);
@@ -604,8 +619,13 @@ void CBlueAmberTerrainsDlg::OnMouseMove(UINT nFlags, CPoint point)
 
 		if (m_mouseMovement.getOffset(point, offsetX, offsetY))
 		{
+#if 0
 			// TODO: control the camera
-#if _DEBUG
+			m_spScene->rotateCameraX(offsetX / 100.0f);
+			m_spScene->rotateCameraY(offsetY / 100.0f);
+#endif
+
+#if 0//_DEBUG
 			CAtlString msg;
 			msg.Format(L"Mouse offset: %ld, %ld\n", offsetX, offsetY);
 			::OutputDebugStringW(msg);

@@ -9,21 +9,14 @@ using namespace BlueAmberTerrainsApp;
 //////////////////////////////////////////////////////////////////////////
 
 
-Scene::Scene(GLfloat terrainScaleFactor, HDC hDC)
+Scene::Scene(GLfloat terrainScaleFactor, HDC hDC, int clientWidth, int clientHeight, const CAtlString& heighmapFilePath)
 	: m_hDC(hDC), m_clientWidth{}, m_clientHeight{}, m_terrain(terrainScaleFactor)
 {
 	if (!m_hDC)
 	{
 		assert(false); throw EXCEPTION(L"Window DC is NULL");
 	}
-}
 
-Scene::~Scene()
-{
-}
-
-bool Scene::initialize(int clientWidth, int clientHeight)
-{
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
@@ -43,47 +36,25 @@ bool Scene::initialize(int clientWidth, int clientHeight)
 	m_spCamera = std::make_unique<Camera>(aspectRatio, CameraScaleFactor, FieldOfView, FrustumNear, FrustumFar);
 
 #if 1
-	// Get our terrain in focus.
+	// Get our future terrain in focus.
 	m_spCamera->translateX(-0.8f);
 	m_spCamera->translateY(-0.8f);
 	m_spCamera->translateZ(-1.5f);
-
-	//m_spCamera->translateX(-55.0f);
 #endif
 
-	try
+	// Load heightmap and initialize terrain.
+	if (!m_terrain.loadHeightmapFromFile(heighmapFilePath))
 	{
-		// TODO: temp - load the hard-coded heightmap.
-		CAtlString filePath = L"D:\\natProgs\\graphics2\\BlueAmberTerrains\\BlueAmberTerrains\\data\\heightmap1.png";
-		if (!loadHeightmapFromFile(filePath))
-		{
-			std::cerr << "Failed to load heightmap: " << std::wstring_convert< std::codecvt_utf8<wchar_t> >().to_bytes(filePath) << '\n';
-			return false;
-		}
-
-		if (!m_terrain.initialize())
-		{
-			std::cerr << "Terrain initialization failed\n";
-			return false;
-		}
+		assert(false); throw EXCEPTION_FMT(L"Failed to load heightmap: %s", heighmapFilePath);
 	}
-	catch (const Exception& ex)
+	else if (!m_terrain.initialize())
 	{
-		std::cerr << "Failed to initialize scene: " << std::wstring_convert< std::codecvt_utf8<wchar_t> >().to_bytes(ex.message()) << '\n';
-		assert(false);
+		assert(false); throw EXCEPTION(L"Terrain initialization failed");
 	}
-	catch (const std::bad_alloc&)
-	{
-		std::cerr << "Memalloc failure while initializing the scene\n";
-		assert(false);
-	}
-
-	return true;
 }
 
-bool Scene::loadHeightmapFromFile(const CAtlString& filePath)
+Scene::~Scene()
 {
-	return m_terrain.loadHeightmapFromFile(filePath);
 }
 
 void Scene::resize(int clientWidth, int clientHeight)
@@ -97,7 +68,6 @@ void Scene::resize(int clientWidth, int clientHeight)
 	glViewport(0, 0, clientWidth, clientHeight);
 
 	// Calculate aspect ratio of the window.
-	//gluPerspective(45.0f, m_clientWndWidth / (GLfloat)m_clientWndHeight, 0.1, 1000.0f);
 	gluPerspective(FieldOfView, clientWidth / (GLfloat)clientHeight, FrustumNear, FrustumFar);
 }
 

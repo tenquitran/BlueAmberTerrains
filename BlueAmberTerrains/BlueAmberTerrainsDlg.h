@@ -94,10 +94,6 @@ private:
 	static void APIENTRY openGlDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, 
 		GLsizei length, const GLchar* message, const void* param);
 
-	// Load heightmap data from the file specified.
-	// Parameters: filePath - full path to the file.
-	bool loadHeightmapFromFile(const CAtlString& filePath);
-
 protected:
 	HICON m_hIcon;
 
@@ -112,6 +108,13 @@ protected:
 
 	afx_msg void OnExitApplication();
 
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg UINT OnGetDlgCode();
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
+
 	DECLARE_MESSAGE_MAP()
 
 private:
@@ -122,12 +125,4 @@ private:
 	std::unique_ptr<BlueAmberTerrainsApp::Scene> m_spScene;
 
 	MouseMovement m_mouseMovement;
-
-public:
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-	afx_msg UINT OnGetDlgCode();
-	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
 };

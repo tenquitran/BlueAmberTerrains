@@ -1,4 +1,4 @@
-BlueAmberTerrains is an MFC-based terrain editor.
+BlueAmberTerrains is an MFC-based terrain generator.
 
 Uses libraries:
 	- GLEW: http://glew.sourceforge.net/

@@ -17,7 +17,6 @@ HeightData::~HeightData()
 	if (m_pData)
 	{
 		SOIL_free_image_data(m_pData);
-		//delete[] m_pData;
 	}
 }
 
@@ -41,10 +40,12 @@ bool HeightData::loadFromFile(const CAtlString& filePath)
 	// Release the previous heightmap data.
 	if (m_pData)
 	{
-		delete[] m_pData;
+		SOIL_free_image_data(m_pData);
 		m_pData = nullptr;
 
-		m_size = {};
+		m_width  = {};
+		m_height = {};
+		m_size   = {};
 	}
 
 	const CAtlStringA filePathA = CW2A(filePath);
@@ -53,7 +54,7 @@ bool HeightData::loadFromFile(const CAtlString& filePath)
 	m_pData = SOIL_load_image(filePathA.GetString(), &m_width, &m_height, 0, SOIL_LOAD_L);
 	if (!m_pData)
 	{
-		std::cerr << "Failed to load texture " << filePathA << ": " << SOIL_last_result() << '\n';
+		std::cerr << "Failed to load heightmap \"" << filePathA << "\": " << SOIL_last_result() << '\n';
 		assert(false); return false;
 	}
 

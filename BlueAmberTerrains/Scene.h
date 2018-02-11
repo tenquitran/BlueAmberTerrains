@@ -6,19 +6,17 @@ namespace BlueAmberTerrainsApp
 	class Scene
 	{
 	public:
-		Scene(GLfloat terrainScaleFactor, HDC hDC);
+		Scene(GLfloat terrainScaleFactor, HDC hDC, int clientWidth, int clientHeight, const CAtlString& heighmapFilePath);
 
 		virtual ~Scene();
 
+#if 0
 		bool initialize(int clientWidth, int clientHeight);
+#endif
 
 		void render() const;
 
 		void resize(int clientWidth, int clientHeight);
-
-		// Load heightmap data from the file specified.
-		// Parameters: filePath - full path to the file.
-		bool loadHeightmapFromFile(const CAtlString& filePath);
 
 		void translateCameraX(GLfloat diff);
 		void translateCameraY(GLfloat diff);
