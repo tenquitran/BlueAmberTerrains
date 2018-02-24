@@ -47,7 +47,15 @@ Scene::Scene(GLfloat terrainScaleFactor, HDC hDC, int clientWidth, int clientHei
 	{
 		assert(false); throw EXCEPTION_FMT(L"Failed to load heightmap: %s", heighmapFilePath);
 	}
-	else if (!m_terrain.initialize())
+	
+	SlopeLightingParams slopeLighting;
+	slopeLighting.m_lightDirectionX = 1;
+	slopeLighting.m_lightDirectionZ = 1;
+	slopeLighting.m_minBrightness   = 0.2f;
+	slopeLighting.m_maxBrightness   = 0.9f;
+	slopeLighting.m_lightSoftness   = 15.0f;
+	
+	if (!m_terrain.initialize(slopeLighting))
 	{
 		assert(false); throw EXCEPTION(L"Terrain initialization failed");
 	}

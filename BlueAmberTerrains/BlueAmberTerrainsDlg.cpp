@@ -452,7 +452,7 @@ void CBlueAmberTerrainsDlg::OnOpenHeightmap()
 			m_spScene.reset();
 		}
 
-		m_spScene = std::make_unique<Scene>(0.25f, GetDC()->m_hDC, clientWidth, clientHeight, filePath);
+		m_spScene = std::make_unique<Scene>(0.35f, GetDC()->m_hDC, clientWidth, clientHeight, filePath);
 	}
 }
 

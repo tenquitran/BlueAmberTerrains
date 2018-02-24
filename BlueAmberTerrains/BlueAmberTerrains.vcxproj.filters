@@ -69,6 +69,15 @@
     <ClInclude Include="HeightData.h">
       <Filter>Terrain</Filter>
     </ClInclude>
+    <ClInclude Include="SlopeLightingParams.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="TiledTexture.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="TexturePresence.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BlueAmberTerrains.cpp">
@@ -102,6 +111,12 @@
       <Filter>Terrain</Filter>
     </ClCompile>
     <ClCompile Include="HeightData.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="TiledTexture.cpp">
+      <Filter>Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="TexturePresence.cpp">
       <Filter>Terrain</Filter>
     </ClCompile>
   </ItemGroup>

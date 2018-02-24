@@ -9,12 +9,18 @@ using namespace BlueAmberTerrainsApp;
 
 Terrain::Terrain(GLfloat scaleFactor)
 	: m_heightmap(scaleFactor), m_vao{}, m_vbo{}, m_index{}, m_indexCount{}, m_unMvp(-1), m_color{}, 
-	  m_minHeightScaled{}, m_maxHeightScaled{}
+	  m_minHeightScaled{}, m_maxHeightScaled{}, m_texturePresence{}
 {
 }
 
 Terrain::~Terrain()
 {
+	if (0 != m_texturePresence)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDeleteBuffers(1, &m_texturePresence);
+	}
+
 	if (0 != m_color)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -45,8 +51,10 @@ bool Terrain::loadHeightmapFromFile(const CAtlString& filePath)
 	return m_heightmap.loadFromFile(filePath);
 }
 
-bool Terrain::initialize()
+bool Terrain::initialize(const SlopeLightingParams& slopeLighting)
 {
+	m_slopeLighting = slopeLighting;
+
 	// The terrain cannot be initialized until loading of the heightmap data.
 	if (m_heightmap.isEmpty())
 	{
@@ -68,9 +76,10 @@ bool Terrain::initialize()
 
 	std::vector<GLfloat> vertices;
 	std::vector<GLuint> indices;
-	std::vector<GLfloat> colors;    // colors for height-based coloring
+	std::vector<GLfloat> colors;      // colors for height-based coloring
+	std::vector<GLfloat> lightmap;    // lightmap for slope lighting
 
-	if (!generateMeshData(vertices, indices, colors))
+	if (!generateTerrainData(vertices, indices, colors, lightmap))
 	{
 		return false;
 	}
@@ -83,7 +92,9 @@ bool Terrain::initialize()
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	// Generate VBO and fill it with the data. Fill the shader attributes.
+	// Generate VBO and fill it with the data.
+
+	// Vertex position.
 
 	glGenBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -93,9 +104,14 @@ bool Terrain::initialize()
 	glVertexAttribPointer(attrVertexPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	glEnableVertexAttribArray(attrVertexPosition);
 
+	// Vertex color.
+
 	glGenBuffers(1, &m_color);
 	glBindBuffer(GL_ARRAY_BUFFER, m_color);
-	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(colors[0]), &colors[0], GL_STATIC_DRAW);
+	// Slope lighting.
+	glBufferData(GL_ARRAY_BUFFER, lightmap.size() * sizeof(lightmap[0]), &lightmap[0], GL_STATIC_DRAW);
+	// Height-based coloring.
+	//glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(colors[0]), &colors[0], GL_STATIC_DRAW);
 
 	const GLuint attrVertexColor = 1;
 	glVertexAttribPointer(attrVertexColor, 1, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
@@ -112,13 +128,15 @@ bool Terrain::initialize()
 		assert(false); return false;
 	}
 
+	generateTextureData(vertices);
+
 	glBindVertexArray(0);
-	glUseProgram(0);
 
 	return true;
 }
 
-bool Terrain::generateMeshData(std::vector<GLfloat>& vertices, std::vector<GLuint>& indices, std::vector<GLfloat>& colors)
+bool Terrain::generateTerrainData(std::vector<GLfloat>& vertices, std::vector<GLuint>& indices, 
+	std::vector<GLfloat>& colors, std::vector<GLfloat>& lightmap)
 {
 	// Width and height of the heightmap.
 	const int Width  = m_heightmap.getWidth();
@@ -210,7 +228,149 @@ bool Terrain::generateMeshData(std::vector<GLfloat>& vertices, std::vector<GLuin
 		}
 	}
 
+	// Calculate lightmap values for slope-based lighting.
+
+	lightmap.resize(Width * Height);
+
+	float shade;
+
+	for (int z = 0; z < Height; ++z)
+	{
+		for (int x = 0; x < Width; ++x)
+		{
+			// Stay inside our heightmap boundaries.
+			if (   z >= m_slopeLighting.m_lightDirectionZ
+				&& x >= m_slopeLighting.m_lightDirectionX)
+			{
+				shade = 1.0f - 
+					(m_heightmap.getActualHeightAtPoint(x - m_slopeLighting.m_lightDirectionX, z - m_slopeLighting.m_lightDirectionZ) -
+					m_heightmap.getActualHeightAtPoint(x, z)) / m_slopeLighting.m_lightSoftness;
+			}
+			// Outside the heightmap boundaries, use the white (very bright) color.
+			else
+			{
+				shade = 1.0f;
+			}
+
+			// Clamp the shading value to the min/max brightness boundaries.
+
+			if (shade < m_slopeLighting.m_minBrightness)
+			{
+				shade = m_slopeLighting.m_minBrightness;
+			}
+
+			if (shade > m_slopeLighting.m_maxBrightness)
+			{
+				shade = m_slopeLighting.m_maxBrightness;
+			}
+
+			lightmap[(z * Width) + x] = shade;
+		}
+	}
+
 	return true;
+}
+
+void Terrain::generateTextureData(const std::vector<GLfloat>& vertices)
+{
+	// Required because the TiledTexture constructor calls glUniform*().
+	glUseProgram(m_spProgram->getProgram());
+
+	m_tiledTextures.resize(TileCount);
+
+	const int HeightmapWidth  = m_heightmap.getWidth();
+	const int HeightmapHeight = m_heightmap.getHeight();
+
+	// Lowest and highest height values for a heightmap.
+	const int LowestHeightInMap  = 0;
+	const int HighestHeightInMap = 255;
+
+	const int PresenceHalfWidth = HighestHeightInMap / (TileCount + 1);
+
+	for (int tile = 0; tile < TileCount; ++tile)
+	{
+		std::string textureFile;
+		std::string textureSamplerName;
+
+		switch (tile)
+		{
+		case 0:
+			textureFile = "data/grass.png";
+			textureSamplerName = "firstTextureSampler";
+			break;
+		case 1:
+			textureFile = "data/grass2.png";
+			textureSamplerName = "secondTextureSampler";
+			break;
+		case 2:
+			textureFile = "data/ground.png";
+			textureSamplerName = "thirdTextureSampler";
+			break;
+		}
+
+		// Optimal heights of the tiles are arranged uniformly.
+		const int optimalHeight = PresenceHalfWidth * (tile + 1);
+
+		// For the first tile, the height should be the lowest possible.
+		// For other tiles, the height should make 2/3 of the distance between the neighboring tiles optimal heights.
+		const int lowestHeight = (0 == tile) ? LowestHeightInMap : (optimalHeight - 3 * PresenceHalfWidth / 4);
+
+		// For the last tile, the height should be the highest possible.
+		// For other tiles, the height should make 2/3 of the distance between the neighboring tiles optimal heights.
+		const int highestHeight = (TileCount - 1 == tile) ? HighestHeightInMap : (optimalHeight + 3 * PresenceHalfWidth / 4);
+
+		m_tiledTextures[tile] = std::make_unique<TiledTexture>(
+			m_spProgram->getProgram(), textureFile, textureSamplerName, HeightmapWidth, HeightmapHeight, vertices,
+			TexturePresence(lowestHeight, optimalHeight, highestHeight));
+	}
+
+	// Calculate texture presence data and pass them to the shaders.
+
+	// Texture presence data for all three textures, one after the other.
+	std::vector<GLfloat> texturePresence(HeightmapHeight * HeightmapWidth * TileCount);
+
+	size_t indexOffset = {};    // data offset for each texture
+
+	for (int tile = 0; tile < TileCount; ++tile)
+	{
+		size_t heightIndex = {};
+
+		for (int z = 0; z < HeightmapHeight; ++z)
+		{
+			for (int x = 0; x < HeightmapWidth; ++x)
+			{
+				unsigned char height = m_heightmap.getActualHeightAtPoint(x, z);
+
+				GLfloat percentage = m_tiledTextures[tile]->getTexturePresencePercent(height);
+
+				texturePresence[indexOffset + heightIndex++] = percentage;
+			}
+		}
+
+		indexOffset += (HeightmapHeight * HeightmapWidth);
+	}
+
+	glGenBuffers(1, &m_texturePresence);
+	glBindBuffer(GL_ARRAY_BUFFER, m_texturePresence);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * texturePresence.size(), &texturePresence[0], GL_STATIC_DRAW);
+
+	const GLuint attrTextureCoordinate1 = 3;
+	glVertexAttribPointer(attrTextureCoordinate1, 1, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(attrTextureCoordinate1);
+
+	int offset = HeightmapHeight * HeightmapWidth * sizeof(GLfloat);
+
+	const GLuint attrTextureCoordinate2 = 4;
+	glVertexAttribPointer(attrTextureCoordinate2, 1, GL_FLOAT, GL_FALSE, 0, (void *)offset);
+	glEnableVertexAttribArray(attrTextureCoordinate2);
+
+	offset += HeightmapHeight * HeightmapWidth * sizeof(GLfloat);
+
+	const GLuint attrTextureCoordinate3 = 5;
+	glVertexAttribPointer(attrTextureCoordinate3, 1, GL_FLOAT, GL_FALSE, 0, (void *)offset);
+	glEnableVertexAttribArray(attrTextureCoordinate3);
+
+	glUseProgram(0);
 }
 
 void Terrain::updateViewMatrices(const std::unique_ptr<Camera>& spCamera) const
@@ -254,8 +414,8 @@ void Terrain::render() const
 
 	glBindVertexArray(m_vao);
 
-#if 0
-	for (int tile = 0; tile < TILE_COUNT; ++tile)
+#if 1
+	for (int tile = 0; tile < TileCount; ++tile)
 	{
 		glActiveTexture(GL_TEXTURE0 + tile);
 		glBindTexture(GL_TEXTURE_2D, m_tiledTextures[tile]->m_texture);
@@ -275,8 +435,8 @@ void Terrain::render() const
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-#if 0
-	for (int tile = 0; tile < TILE_COUNT; ++tile)
+#if 1
+	for (int tile = 0; tile < TileCount; ++tile)
 	{
 		glActiveTexture(GL_TEXTURE0 + tile);
 		glBindTexture(GL_TEXTURE_2D, 0);

@@ -92,5 +92,8 @@ namespace BlueAmberTerrainsApp
 
 #include "HeightData.h"
 #include "Heightmap.h"
+#include "SlopeLightingParams.h"
+#include "TexturePresence.h"
+#include "TiledTexture.h"
 #include "Terrain.h"
 #include "Scene.h"
