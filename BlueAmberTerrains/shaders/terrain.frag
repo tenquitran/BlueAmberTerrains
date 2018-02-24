@@ -2,8 +2,8 @@
 #pragma debug(on)
 #pragma optimize(off)
 
-smooth in vec4 heightColor;    // height-based color
-in vec2 texCoord2;             // texture coordinates
+smooth in vec4 outColor;    // slope or height-based color
+in vec2 texCoord2;          // texture coordinates
 
 // Presence of the textures (in percent).
 in float firstTexturePresence2;
@@ -22,9 +22,9 @@ void main()
 {
 	// Multitexturing (using fixed texture weights).
 
-	vec4 firstTextureColor  = texture(firstTextureSampler, texCoord2);
+	vec4 firstTextureColor  = texture(firstTextureSampler,  texCoord2);
 	vec4 secondTextureColor = texture(secondTextureSampler, texCoord2);
-	vec4 thirdTextureColor  = texture(thirdTextureSampler, texCoord2);
+	vec4 thirdTextureColor  = texture(thirdTextureSampler,  texCoord2);
 	
 	// TODO: original code
 	//vec4 texColor = firstTextureColor * firstTexturePresence2 + secondTextureColor * secondTexturePresence2 + thirdTextureColor * thirdTexturePresence2;
@@ -65,10 +65,10 @@ void main()
 	}
 	*/
 	
-	fragColor = texColor;
+	fragColor = outColor * texColor;
 
 	//fragColor = clamp(texColor, 0.0, 1.0);
-	//fragColor = heightColor * texColor;    // add height-based component
+	//fragColor = outColor * texColor;    // add height-based component
 
 	// One texture.
 	//fragColor = texture2D(uSampler, texCoord1.xy);

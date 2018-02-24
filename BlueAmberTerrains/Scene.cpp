@@ -53,7 +53,7 @@ Scene::Scene(GLfloat terrainScaleFactor, HDC hDC, int clientWidth, int clientHei
 	slopeLighting.m_lightDirectionZ = 1;
 	slopeLighting.m_minBrightness   = 0.2f;
 	slopeLighting.m_maxBrightness   = 0.9f;
-	slopeLighting.m_lightSoftness   = 15.0f;
+	slopeLighting.m_lightSoftness   = 17.0f;
 	
 	if (!m_terrain.initialize(slopeLighting))
 	{
